@@ -49,7 +49,40 @@ class EjemploFuncionCostosa1a {
     System.out.println( "Suma del vector Y:          " + sumaY );
 
 
-    System.out.println( "Fin del programa." );
+    System.out.println( "Fin del programa secuencial" );
+    
+    System.out.println("Inicio del programa concurrente con distribución cíclica.");
+    
+    Thread[] vHebras = new Thread[numHebras];
+    
+    inicializaVectorX(vectorX);
+    inicializaVectorY(vectorY);
+    t1 = System.nanoTime();
+    
+    for(int i = 0; i < numHebras; i++) {
+    	vHebras[i] = new HebraCiclica(i, numHebras, vectorX, vectorY);
+    	vHebras[i].start();
+    }
+    
+    for(int i = 0; i < numHebras; i++) {
+    	try {
+			vHebras[i].join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
+    t2 = System.nanoTime();
+    tt = ( ( double ) ( t2 - t1 ) ) / 1.0e9;
+    System.out.println( "Tiempo concurrente cíclico (seg.):                    " + tt );
+    
+    sumaX = sumaVector( vectorX );
+    sumaY = sumaVector( vectorY );
+    System.out.println( "Suma del vector X:          " + sumaX );
+    System.out.println( "Suma del vector Y:          " + sumaY );
+    
+    System.out.println("Fin programa concurrente cíclico.");
   }
 
   // --------------------------------------------------------------------------
@@ -99,6 +132,23 @@ class EjemploFuncionCostosa1a {
                           "  y: " + vectorY[ i ] );
     }
   }
+}
 
+class HebraCiclica extends Thread {
+	double[] vectorX, vectorY;
+	int miId, numHebras;
+	
+	public HebraCiclica(int miId, int numHebras, double[] vectorX, double[] vectorY) {
+		this.vectorX = vectorX;
+		this.vectorY = vectorY;
+		this.miId = miId;
+		this.numHebras = numHebras;
+	}
+	
+	public void run() {
+		for(int i = miId; i < vectorX.length; i += numHebras) {
+			vectorY[ i ] = Math.sin( Math.exp( -vectorX[i] ) + Math.log( 1 + vectorX[i] ) );
+		}
+	}
 }
 
