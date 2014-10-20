@@ -51,6 +51,7 @@ class EjemploFuncionCostosa1a {
 
     System.out.println( "Fin del programa secuencial" );
     
+    //Parte Concurrente ciclica--------------------------------
     System.out.println("Inicio del programa concurrente con distribución cíclica.");
     
     Thread[] vHebras = new Thread[numHebras];
@@ -83,8 +84,43 @@ class EjemploFuncionCostosa1a {
     System.out.println( "Suma del vector Y:          " + sumaY );
     
     System.out.println("Fin programa concurrente cíclico.");
+  
+//Fin parte concurrente ciclica---------
+  
+ //Parte concurrente por bloques---------
+  System.out.println("Inicio del programa concurrente con distribución por bloques.");
+  
+  inicializaVectorX(vectorX);
+  inicializaVectorY(vectorY);
+  t1 = System.nanoTime();
+  
+  for(int i = 0; i < numHebras; i++) {
+  	vHebras[i] = new HebraBloques(i, numHebras, vectorX, vectorY);
+  	vHebras[i].start();
   }
-
+  
+  for(int i = 0; i < numHebras; i++) {
+  	try {
+			vHebras[i].join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+  }
+  
+  t2 = System.nanoTime();
+  tt = ( ( double ) ( t2 - t1 ) ) / 1.0e9;
+  System.out.println( "Tiempo concurrente por bloques (seg.):                    " + tt );
+  
+  sumaX = sumaVector( vectorX );
+  sumaY = sumaVector( vectorY );
+  System.out.println( "Suma del vector X:          " + sumaX );
+  System.out.println( "Suma del vector Y:          " + sumaY );
+  
+  System.out.println("Fin programa concurrente por bloques.");
+  
+  }
+  
   // --------------------------------------------------------------------------
   static void inicializaVectorX( double vectorX[] ) {
     if( vectorX.length == 1 ) {
@@ -148,6 +184,29 @@ class HebraCiclica extends Thread {
 	public void run() {
 		for(int i = miId; i < vectorX.length; i += numHebras) {
 			vectorY[ i ] = Math.sin( Math.exp( -vectorX[i] ) + Math.log( 1 + vectorX[i] ) );
+		}
+	}
+}
+
+class HebraBloques extends Thread{
+	double[] vectorX,vectorY;
+	int miId,numHebras;
+	
+	public HebraBloques(int miId, int numHebras, double[] vectorX, double[] vectorY) {
+		this.vectorX = vectorX;
+		this.vectorY = vectorY;
+		this.miId = miId;
+		this.numHebras = numHebras;
+	}
+	
+	public void run(){
+		int n=vectorX.length;
+		int tam=(n+numHebras-1)/numHebras;
+		int ini=tam*miId;
+		int fin=Math.min(n,ini+tam);
+		for(int i=ini;i<fin;i++){
+			double elemento=vectorX[i];
+			vectorY[ i ] = Math.sin( Math.exp( -elemento ) + Math.log( 1 + elemento ) );
 		}
 	}
 }
