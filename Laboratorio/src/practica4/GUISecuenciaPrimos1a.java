@@ -2,6 +2,8 @@ package practica4;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.lang.reflect.InvocationTargetException;
+
 import javax.swing.*;
 import javax.swing.event.*;
 
@@ -13,6 +15,7 @@ public class GUISecuenciaPrimos1a {
   JTextField  txfMensajes;
   JButton     btnComienzaSecuencia, btnCancelaSecuencia;
   JSlider     sldEspera;
+  HebraTrabajadora miHebra;
 
   // -------------------------------------------------------------------------
   public static void main( String args[] ) {
@@ -64,19 +67,27 @@ public class GUISecuenciaPrimos1a {
     
     // Activa inicialmente los 2 botones.
     btnComienzaSecuencia.setEnabled( true );
-    btnCancelaSecuencia.setEnabled( true );
+    btnCancelaSecuencia.setEnabled( false );
 
     // Anyade codigo para procesar el evento del boton de Comienza secuencia.
     btnComienzaSecuencia.addActionListener( new ActionListener() {
         public void actionPerformed( ActionEvent e ) {
-          // ...
+          btnComienzaSecuencia.setEnabled(false);
+          btnCancelaSecuencia.setEnabled(true);
+          miHebra=new HebraTrabajadora( txfMensajes);
+          miHebra.start();
+        	
+        	
+        	
         }
     } );
 
     // Anyade codigo para procesar el evento del boton de Cancela secuencia.
     btnCancelaSecuencia.addActionListener( new ActionListener() {
         public void actionPerformed( ActionEvent e ) {
-          // ...
+          miHebra.detenHilo();
+          btnCancelaSecuencia.setEnabled(false);
+          btnComienzaSecuencia.setEnabled(true);
         }
     } );
 
@@ -114,6 +125,54 @@ public class GUISecuenciaPrimos1a {
       }
     }
     return( primo );
+  }
+  
+  class HebraTrabajadora extends Thread{
+
+	  JTextField textoMensajes;
+	  boolean continuaFlag;
+	
+	  
+	  public HebraTrabajadora(JTextField textoMensajes){
+		  
+		  this.textoMensajes=textoMensajes;
+		  continuaFlag=true;
+		 
+	  }
+	  
+	  public void detenHilo(){
+		  continuaFlag=false;
+	  }
+	  
+	  public void run(){
+		  int i=0;
+		  boolean continua=true;
+		  while(continua){
+			  if(esPrimo(i)){
+				  final int iFinal = i;
+				  	if(continuaFlag==false){
+				  		continua=false;
+				  	}
+					try {
+						SwingUtilities.invokeAndWait(new Runnable() {
+							
+							@Override
+							public void run() {
+								textoMensajes.setText(""+iFinal);
+							}
+						});
+					} catch (InvocationTargetException e) {
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				
+			  }
+			  i++;
+		  }
+		  
+	  }
+	  
   }
 }
 
