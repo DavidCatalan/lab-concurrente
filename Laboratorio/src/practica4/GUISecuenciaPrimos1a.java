@@ -16,6 +16,7 @@ public class GUISecuenciaPrimos1a {
   JButton     btnComienzaSecuencia, btnCancelaSecuencia;
   JSlider     sldEspera;
   HebraTrabajadora miHebra;
+  ZonaIntercambio zi;
 
   // -------------------------------------------------------------------------
   public static void main( String args[] ) {
@@ -31,6 +32,8 @@ public class GUISecuenciaPrimos1a {
 
     // Variables.
     JPanel  tempPanel;
+    
+    zi = new ZonaIntercambio();
 
     // Crea el JFrame principal.
     container = new JFrame( "GUI Secuencia de Primos 1a" );
@@ -74,7 +77,7 @@ public class GUISecuenciaPrimos1a {
         public void actionPerformed( ActionEvent e ) {
           btnComienzaSecuencia.setEnabled(false);
           btnCancelaSecuencia.setEnabled(true);
-          miHebra=new HebraTrabajadora( txfMensajes);
+          miHebra=new HebraTrabajadora( txfMensajes, zi);
           miHebra.start();
         	
         	
@@ -97,7 +100,7 @@ public class GUISecuenciaPrimos1a {
         JSlider sl = ( JSlider ) e.getSource();
         if ( ! sl.getValueIsAdjusting() ) {
           long tiempoMilisegundos = ( long ) sl.getValue();
-          // ...
+          zi.setTiempo(tiempoMilisegundos * 2);
         }
       }
     } );
@@ -131,12 +134,13 @@ public class GUISecuenciaPrimos1a {
 
 	  JTextField textoMensajes;
 	  boolean continuaFlag;
-	
+	  ZonaIntercambio zi;
 	  
-	  public HebraTrabajadora(JTextField textoMensajes){
+	  public HebraTrabajadora(JTextField textoMensajes, ZonaIntercambio zi){
 		  
 		  this.textoMensajes=textoMensajes;
 		  continuaFlag=true;
+		  this.zi = zi;
 		 
 	  }
 	  
@@ -169,10 +173,31 @@ public class GUISecuenciaPrimos1a {
 				
 			  }
 			  i++;
+			  try {
+				sleep(zi.getTiempo());
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		  }
 		  
 	  }
 	  
+  }
+  
+  class ZonaIntercambio {
+	  volatile long tiempo;
+	  
+	  public ZonaIntercambio() {
+		  super();
+	  }
+	  
+	  public void setTiempo(long tiempo) {
+		  this.tiempo = tiempo;
+	  }
+	  
+	  public long getTiempo() {
+		  return tiempo;
+	  }
   }
 }
 
