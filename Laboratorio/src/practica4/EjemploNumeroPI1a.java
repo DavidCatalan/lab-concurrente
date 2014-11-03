@@ -22,14 +22,14 @@ class Acumula {
 }
 
 // ===========================================================================
-class MiHebraMultAcumulaciones1b extends Thread {
+class MiHebraUnaAcumulaciones1b extends Thread {
 // ===========================================================================
   int      miId, numHebras;
   long     numRectangulos;
   Acumula  a;
 
   // -------------------------------------------------------------------------
-  MiHebraMultAcumulaciones1b( int miId, int numHebras, long numRectangulos, 
+  MiHebraUnaAcumulaciones1b( int miId, int numHebras, long numRectangulos, 
                               Acumula a ) {
 	  this.miId = miId;
 	  this.numHebras = numHebras;
@@ -52,6 +52,36 @@ class MiHebraMultAcumulaciones1b extends Thread {
 }
 
 
+
+class MiHebraMultAcumulaciones1b extends Thread {
+	// ===========================================================================
+	  int      miId, numHebras;
+	  long     numRectangulos;
+	  Acumula  a;
+
+	  // -------------------------------------------------------------------------
+	  MiHebraMultAcumulaciones1b( int miId, int numHebras, long numRectangulos, 
+	                              Acumula a ) {
+		  this.miId = miId;
+		  this.numHebras = numHebras;
+		  this.numRectangulos = numRectangulos;
+		  this.a = a;
+	  }
+
+	  // -------------------------------------------------------------------------
+	  public void run() {
+		  double baseRectangulo = 1.0 / ( ( double ) numRectangulos );
+		 
+		  
+		  for(int i = miId; i < numRectangulos; i += numHebras) {
+			  double x = baseRectangulo * ( ( ( double ) i ) + 0.5 );
+		     a.acumulaDato(4.0/(1.0+x*x));
+		  }
+		 
+	  }
+	  
+	}
+
 // ===========================================================================
 class EjemploNumeroPI1a {
 // ===========================================================================
@@ -62,6 +92,7 @@ class EjemploNumeroPI1a {
     double                      baseRectangulo, x, suma, pi;
     int                         numHebras;
     MiHebraMultAcumulaciones1b  vt[];
+    MiHebraUnaAcumulaciones1b vu[];
     Acumula                     a;
     long                        t1, t2;
     double                      tSec, tPar;
@@ -133,6 +164,42 @@ class EjemploNumeroPI1a {
     tPar = ( ( double ) ( t2 - t1 ) ) / 1.0e9;
     
     System.out.println( "Version Paralela. Numero PI: " + pi );
+    System.out.println( "Tiempo transcurrido (s.):      " + tPar );
+    
+    System.out.println();
+    
+    
+    
+    //
+    // Calculo del numero PI de forma paralela: 
+    // Una sola acumulacion por hebra.
+    //
+    
+    System.out.println();
+    System.out.println("Comienzo del cálculo paralelo con distribución cíclica y una acumulacion.");
+    t1 = System.nanoTime();
+    a = new Acumula();
+    vu = new MiHebraUnaAcumulaciones1b[numHebras];
+    for(int i = 0; i < numHebras; i++) {
+    	vu[i] = new MiHebraUnaAcumulaciones1b(i, numHebras, numRectangulos, a);
+    	vu[i].start();
+    }
+    
+    for(int i = 0; i < numHebras; i++) {
+    	try {
+			vu[i].join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+
+    pi = baseRectangulo * a.dameDato();
+    
+    t2 = System.nanoTime();
+    tPar = ( ( double ) ( t2 - t1 ) ) / 1.0e9;
+    
+    System.out.println( "Version Paralela con una acumulacion. Numero PI: " + pi );
     System.out.println( "Tiempo transcurrido (s.):      " + tPar );
     
     System.out.println();
