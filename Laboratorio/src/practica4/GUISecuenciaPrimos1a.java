@@ -146,13 +146,11 @@ public class GUISecuenciaPrimos1a {
 	  
 	  public void run(){
 		  int i=0;
-		  boolean continua=true;
-		  while(continua){
+		  
+		  while(continuaFlag){
 			  if(esPrimo(i)){
 				  final int iFinal = i;
-				  	if(continuaFlag==false){
-				  		continua=false;
-				  	}
+				  	
 					try {
 						SwingUtilities.invokeAndWait(new Runnable() {
 							
