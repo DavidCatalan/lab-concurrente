@@ -40,12 +40,15 @@ class MiHebraMultAcumulaciones1b extends Thread {
   // -------------------------------------------------------------------------
   public void run() {
 	  double baseRectangulo = 1.0 / ( ( double ) numRectangulos );
-
+	  double acumulacionHebra=0;
+	  
 	  for(int i = miId; i < numRectangulos; i += numHebras) {
 		  double x = baseRectangulo * ( ( ( double ) i ) + 0.5 );
-	      a.acumulaDato(4.0/( 1.0 + x*x));
+	      acumulacionHebra+=4.0/(1.0+x*x);
 	  }
+	  a.acumulaDato(acumulacionHebra);
   }
+  
 }
 
 
