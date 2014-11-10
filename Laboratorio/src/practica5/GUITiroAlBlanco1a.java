@@ -2,9 +2,12 @@ package practica5;
 
 import java.awt.*;
 import java.awt.event.*;
+
 import javax.swing.*;
+
 import java.lang.*;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 // ============================================================================
 public class GUITiroAlBlanco1a {
@@ -34,7 +37,8 @@ public class GUITiroAlBlanco1a {
     // Declaracion de variables locales.
     JPanel  tempPanel;
     JPanel  controles;
-
+    ZonaIntercambio zi = new ZonaIntercambio();
+    
     // Crea el JFrame principal.
     container = new JFrame( "GUI Tiro Al Blanco 1a" );
 
@@ -81,11 +85,8 @@ public class GUITiroAlBlanco1a {
             if( ( 0.0 < angulo )&&( angulo < 90 )&&( velocidad > 0 ) ) {
               txfMensajes.setText( "Calculando y dibujando nueva trayectoria" );
           
-              // Dibuja el proyectil. 
-              Proyectil1a p = new Proyectil1a( velocidad, angulo );
-
-              MiHebraCalculadoraUnDisparo h = new MiHebraCalculadoraUnDisparo(cnvCampoTiro, txfMensajes, p);
-              h.start();
+              NuevoDisparo disparo = new NuevoDisparo(velocidad, angulo);
+              zi.addDisparo(disparo);
               
             } else {
               txfMensajes.setText( "Error: Datos incorrectos." );
@@ -103,6 +104,10 @@ public class GUITiroAlBlanco1a {
     container.pack();
     container.setResizable( false );
     container.setVisible( true );
+    
+    MiHebraCalculadoraUnDisparo h = new MiHebraCalculadoraUnDisparo(cnvCampoTiro, txfMensajes, p);
+    h.setDaemon(true);
+    h.start();
   }
 }
 
@@ -334,73 +339,126 @@ class Proyectil1a {
 class MiHebraCalculadoraUnDisparo extends Thread {
 	CanvasCampoTiro1a canvas;
 	JTextField campoMensajes;
-	Proyectil1a proyectil;
+	ZonaIntercambio zi;
+	ArrayList<Proyectil1a> listaEnElAire;
 	
-	public MiHebraCalculadoraUnDisparo(CanvasCampoTiro1a canvas, JTextField campoMensajes, Proyectil1a proyectil) {
+	public MiHebraCalculadoraUnDisparo(CanvasCampoTiro1a canvas, JTextField campoMensajes, ZonaIntercambio zi) {
 		this.canvas = canvas;
 		this.campoMensajes = campoMensajes;
-		this.proyectil = proyectil;
+		this.zi = zi;
+		this.listaEnElAire = new ArrayList<Proyectil1a>();
 	}
 	
 	public void run() {
-		 while( proyectil.getEstadoProyectil() == 0 )  {
-			 String mensaje;
-             // Muestra en pantalla los datos del proyectil p.
-             proyectil.muestra();
-
-             // Mueve el proyectil durante un incremental de tiempo.
-             proyectil.mueveDuranteUnIncremental( canvas.getObjetivoX(),
-                                          canvas.getObjetivoY() );
-
-             
-             final Proyectil1a p = proyectil;
-             final CanvasCampoTiro1a c = canvas;
-             // Dibuja el proyectil.
-             SwingUtilities.invokeLater(new Runnable() {
-
-				@Override
-				public void run() {
-					p.dibujaProyectil(c);
+		while(true) {
+			while(listaEnElAire.size() == 0 || zi.getSize() != 0) {
+				while(zi.getSize() == 0) {
+					
 				}
-            	 
-             });
-             
-             proyectil.dibujaProyectil( canvas );
+				
+				NuevoDisparo disp = zi.getDisparo();
+				listaEnElAire.add(new Proyectil1a(disp.getVelocidad(), disp.getAngulo()));
+			}
+			
+			for(Proyectil1a proyectil:listaEnElAire) {
+				if( proyectil.getEstadoProyectil() == 0) {
+					String mensaje;
+					
+					proyectil.muestra();
+					
+					proyectil.mueveDuranteUnIncremental(canvas.getObjetivoX(), canvas.getObjetivoY());
+					
+					final Proyectil1a p = proyectil;
+					final CanvasCampoTiro1a c = canvas;
+					
+					SwingUtilities.invokeLater(new Runnable() {
 
-             // Comprueba si el proyectil ha impactado contra el suelo o no.
-             if( proyectil.getEstadoProyectil() != 0 ) {
-               // El proyectil ha impactado contra el suelo.
-               // Construye y muestra mensaje adecuado.
-               if( proyectil.getEstadoProyectil() == 2 ) {
-                 mensaje = "Destruido!";
-               } else {
-                 mensaje = "Fallado. El objetivo esta en: " + 
-                           canvas.getObjetivoX() + 
-                           "  Has disparado a: " + proyectil.getIntPosX();
-               }
-               final String muestra = mensaje;
-               
-               SwingUtilities.invokeLater(new Runnable () {
+						@Override
+						public void run() {
+							p.dibujaProyectil(c);
+						}
+		            	 
+		             });
+					
+					if( proyectil.getEstadoProyectil() != 0 ) {
+						// El proyectil ha impactado contra el suelo.
+						// Construye y muestra mensaje adecuado.
+						if( proyectil.getEstadoProyectil() == 2 ) {
+							mensaje = "Destruido!";
+						} else {
+							mensaje = "Fallado. El objetivo esta en: " + 
+									canvas.getObjetivoX() + 
+									"  Has disparado a: " + proyectil.getIntPosX();
+						}
+						
+						listaEnElAire.remove(proyectil);
+						final String muestra = mensaje;
 
-					@Override
-					public void run() {
-						campoMensajes.setText(muestra);
+						SwingUtilities.invokeLater(new Runnable () {
+
+							@Override
+							public void run() {
+								campoMensajes.setText(muestra);
+							}
+
+						});
+					}
 				}
-            	   
-               });
-             }
-		 }
+			}
+		}
+		
 	}
 }
 
+//============================================================================
 class NuevoDisparo {
-	private Proyectil1a p;
+// ============================================================================
+	private double velocidad, angulo;
 	
 	public NuevoDisparo(double velocidad, double angulo) {
-		this.p = new Proyectil1a(velocidad, angulo);
+		this.velocidad = velocidad;
+		this.angulo = angulo;
 	}
 	
-	public Proyectil1a getProyectil() {
-		return this.p;
+	public double getVelocidad() {
+		return velocidad;
+	}
+	
+	public double getAngulo() {
+		return angulo;
 	}
 }
+
+//============================================================================
+class ZonaIntercambio {
+// ============================================================================
+	private LinkedBlockingQueue<NuevoDisparo> cola;
+	
+	public ZonaIntercambio () {
+		super();
+		cola = new LinkedBlockingQueue<NuevoDisparo>();
+	}
+	
+	public void addDisparo(NuevoDisparo disp) {
+		try {
+			cola.put( disp );
+		} catch ( InterruptedException ex ) {
+			ex.printStackTrace();
+		}
+	}
+	
+	public NuevoDisparo getDisparo() {
+		NuevoDisparo disp = null;
+		try {
+			disp = cola.take();
+		} catch ( InterruptedException ex ) {
+			ex.printStackTrace();
+		}
+		return disp;  
+	}
+	
+	public int getSize() {
+		return cola.size();
+	}
+}
+
