@@ -105,7 +105,7 @@ public class GUITiroAlBlanco1a {
     container.setResizable( false );
     container.setVisible( true );
     
-    MiHebraCalculadoraUnDisparo h = new MiHebraCalculadoraUnDisparo(cnvCampoTiro, txfMensajes, p);
+    MiHebraCalculadoraUnDisparo h = new MiHebraCalculadoraUnDisparo(cnvCampoTiro, txfMensajes, zi);
     h.setDaemon(true);
     h.start();
   }
@@ -237,6 +237,19 @@ class Proyectil1a {
     this.velX      = Math.cos( anguloRad ) * velocidadInicial;
     this.velY      = Math.sin( anguloRad ) * velocidadInicial;
   }
+  
+  Proyectil1a(Proyectil1a p) {
+	  this.anguloRad = p.anguloRad;
+	  this.velX = p.velX;
+	  this.velY = p.velY;
+	  this.posX = p.posX;
+	  this.posY = p.posY;
+	  this.intPosX = p.intPosX;
+	  this.intPosY = p.intPosY;
+	  this.intPosXOld = p.intPosXOld;
+	  this.intPosYOld = p.intPosYOld;
+	  
+  }
 
   // --------------------------------------------------------------------------
   void mueveDuranteUnIncremental( int objetivoX, int objetivoY ) {
@@ -352,15 +365,12 @@ class MiHebraCalculadoraUnDisparo extends Thread {
 	public void run() {
 		while(true) {
 			while(listaEnElAire.size() == 0 || zi.getSize() != 0) {
-				while(zi.getSize() == 0) {
-					
-				}
-				
 				NuevoDisparo disp = zi.getDisparo();
 				listaEnElAire.add(new Proyectil1a(disp.getVelocidad(), disp.getAngulo()));
 			}
 			
-			for(Proyectil1a proyectil:listaEnElAire) {
+			for(int i = 0; i < listaEnElAire.size(); i++) {
+				Proyectil1a proyectil = listaEnElAire.get(i);
 				if( proyectil.getEstadoProyectil() == 0) {
 					String mensaje;
 					
@@ -368,7 +378,7 @@ class MiHebraCalculadoraUnDisparo extends Thread {
 					
 					proyectil.mueveDuranteUnIncremental(canvas.getObjetivoX(), canvas.getObjetivoY());
 					
-					final Proyectil1a p = proyectil;
+					final Proyectil1a p = new Proyectil1a(proyectil);
 					final CanvasCampoTiro1a c = canvas;
 					
 					SwingUtilities.invokeLater(new Runnable() {
@@ -432,7 +442,7 @@ class NuevoDisparo {
 //============================================================================
 class ZonaIntercambio {
 // ============================================================================
-	private LinkedBlockingQueue<NuevoDisparo> cola;
+	private volatile LinkedBlockingQueue<NuevoDisparo> cola;
 	
 	public ZonaIntercambio () {
 		super();
