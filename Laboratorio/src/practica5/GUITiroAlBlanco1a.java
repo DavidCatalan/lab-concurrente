@@ -352,7 +352,19 @@ class MiHebraCalculadoraUnDisparo extends Thread {
              proyectil.mueveDuranteUnIncremental( canvas.getObjetivoX(),
                                           canvas.getObjetivoY() );
 
+             
+             final Proyectil1a p = proyectil;
+             final CanvasCampoTiro1a c = canvas;
              // Dibuja el proyectil.
+             SwingUtilities.invokeLater(new Runnable() {
+
+				@Override
+				public void run() {
+					p.dibujaProyectil(c);
+				}
+            	 
+             });
+             
              proyectil.dibujaProyectil( canvas );
 
              // Comprueba si el proyectil ha impactado contra el suelo o no.
@@ -372,13 +384,15 @@ class MiHebraCalculadoraUnDisparo extends Thread {
 
 					@Override
 					public void run() {
-						// TODO Auto-generated method stub
 						campoMensajes.setText(muestra);
 				}
             	   
                });
              }
-           }
-
+		 }
 	}
+}
+
+class NuevoDisparo {
+	
 }
