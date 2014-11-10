@@ -394,5 +394,13 @@ class MiHebraCalculadoraUnDisparo extends Thread {
 }
 
 class NuevoDisparo {
+	private Proyectil1a p;
 	
+	public NuevoDisparo(double velocidad, double angulo) {
+		this.p = new Proyectil1a(velocidad, angulo);
+	}
+	
+	public Proyectil1a getProyectil() {
+		return this.p;
+	}
 }
