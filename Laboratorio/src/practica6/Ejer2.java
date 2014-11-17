@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.*;
 
 // ============================================================================
-class EjemploPalabraMasUsada1a {
+class Ejer2 {
 // ============================================================================
 
   // -------------------------------------------------------------------------
@@ -108,12 +108,12 @@ class EjemploPalabraMasUsada1a {
     t2 = System.nanoTime();
     tt = ( ( double ) ( t2 - t1 ) ) / 1.0e9;
     System.out.print( "Implemen. paralela con HashTable: " );
-    imprimePalabraMasUsadaYVeces( hmCuentaPalabras );
+    imprimePalabraMasUsadaYVeces( htConcurrente );
     System.out.println( " Tiempo(s): " + tt );
-    System.out.println( "Num. elems. tabla hash: " + hmCuentaPalabras.size() );
+    System.out.println( "Num. elems. tabla hash: " + htConcurrente.size() );
     System.out.println();
     
-    
+    //-------Fin-------------
     
     
     
@@ -234,7 +234,7 @@ class MiHebra2 extends Thread{
 		    }
 	}
 
-	private void contabilizaPalabra(Hashtable<String, Integer> htConcurrente,
+	static synchronized void contabilizaPalabra(Hashtable<String, Integer> htConcurrente,
 			String palabraActual) {
 		Integer numVeces = htConcurrente.get( palabraActual );
 	    if( numVeces != null ) {
