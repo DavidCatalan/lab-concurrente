@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.*;
 
 // ============================================================================
-class EjemploPalabraMasUsada1a {
+class Ejer1 {
 // ============================================================================
 
   // -------------------------------------------------------------------------
@@ -78,7 +78,7 @@ class EjemploPalabraMasUsada1a {
     System.out.println();
 
     
-    //-----Implementacion paralela-----------------------------------------
+    //-----Implementacion paralela con HashMap-----------------------------------------
     
     t1 = System.nanoTime();
     hmCuentaPalabras=new HashMap<String,Integer>(1000,0.75F);
@@ -107,7 +107,7 @@ class EjemploPalabraMasUsada1a {
     System.out.println();
 //---------------------------------------------------------
     
-    
+
     
     
     
