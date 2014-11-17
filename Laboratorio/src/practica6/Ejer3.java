@@ -2,9 +2,10 @@ package practica6;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 // ============================================================================
-class Ejer2 {
+class Ejer3 {
 // ============================================================================
 
   // -------------------------------------------------------------------------
@@ -15,8 +16,8 @@ class Ejer2 {
     String                   nombreFichero, palabraActual;
     Vector<String>           vectorLineas;
     HashMap<String,Integer>  hmCuentaPalabras;
-    Hashtable<String,Integer> htConcurrente;
-    MiHebra2[] vectorHebras2;
+    ConcurrentHashMap<String, Integer> hmConcurrente;
+    MiHebra3[] vectorHebras3;
     
     // Comprobacion y extraccion de los argumentos de entrada.
     if( args.length != 2 ) {
@@ -78,45 +79,33 @@ class Ejer2 {
     System.out.println( "Num. elems. tabla hash: " + hmCuentaPalabras.size() );
     System.out.println();
 
-
-    System.out.println( "Fin de programa." );
-    
-    
-    //---------Implementacion paralela con HashTable------------
-    
+    //-----Implementacion paralela con ConcurrentHashMap-------------------------
     t1 = System.nanoTime();
-    htConcurrente=new Hashtable<String,Integer>(1000,0.75F);
-    vectorHebras2=new MiHebra2[numHebras];
+    hmConcurrente=new ConcurrentHashMap<String,Integer>(1000, 0.75F);
+    vectorHebras3=new MiHebra3[numHebras];
     for(int i=0;i<numHebras;i++){
-    	vectorHebras2[i]=new MiHebra2(i, numHebras, vectorLineas, htConcurrente);
-    	vectorHebras2[i].start();
+    	vectorHebras3[i]=new MiHebra3(hmConcurrente, i, numHebras, vectorLineas);
+    	vectorHebras3[i].start();
     }
     
     for(int i=0;i<numHebras;i++){
     	try {
-			vectorHebras2[i].join();
+			vectorHebras3[i].join();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
     }
     
     
-    
-    
-    
-    
     t2 = System.nanoTime();
     tt = ( ( double ) ( t2 - t1 ) ) / 1.0e9;
-    System.out.print( "Implemen. paralela con HashTable: " );
-    imprimePalabraMasUsadaYVeces( htConcurrente );
+    System.out.print( "Implemen. secuencial: " );
+    imprimePalabraMasUsadaYVeces( hmConcurrente );
     System.out.println( " Tiempo(s): " + tt );
-    System.out.println( "Num. elems. tabla hash: " + htConcurrente.size() );
+    System.out.println( "Num. elems. tabla hash: " + hmConcurrente.size() );
     System.out.println();
-    
-    //-------Fin-------------
-    
-    
-    
+
+    System.out.println( "Fin de programa." );
   }
 
   // -------------------------------------------------------------------------
@@ -207,41 +196,42 @@ class Ejer2 {
   }
 }
 
-class MiHebra2 extends Thread{
+class MiHebra3 extends Thread{
 	int miId,numHebras;
 	Vector<String> vectorLineas;
-	static Hashtable<String,Integer> htConcurrente;
+	static ConcurrentHashMap<String, Integer> hmConcurrente;
 	
-	public MiHebra2(int miId,int numHebras,Vector<String> vectorLineas,Hashtable<String,Integer> htConcurrente) {
-		this.miId=miId;
-		this.numHebras=numHebras;
-		this.htConcurrente=htConcurrente;
-		this.vectorLineas=vectorLineas;
-	}
+	MiHebra3(ConcurrentHashMap<String, Integer> hmconcurrente,int miId,int numHebras,Vector<String> vectorLineas){
+		  this.hmConcurrente=hmconcurrente;
+		  this.miId=miId;
+		  this.numHebras=numHebras;
+		  this.vectorLineas=vectorLineas;
+	  }
 	
 	public void run(){
-		String palabraActual;
-		for( int i = miId; i < vectorLineas.size(); i+=numHebras ) {
+		 String palabraActual;
+		  for( int i = miId; i < vectorLineas.size(); i+=numHebras ) {
 		      // Procesa la linea "i".
 		      String[] palabras = vectorLineas.get( i ).split( " " );
 		      for( int j = 0; j < palabras.length; j++ ) {
 		        // Procesa cada palabra de la linea "i", si es distinta de blancos.
 		        palabraActual = palabras[ j ].trim();
 		        if( palabraActual.length() > 0 ) {
-		          contabilizaPalabra(palabraActual );
+		        	contabilizaPalabra(palabraActual);
 		        }
 		      }
 		    }
 	}
 
 	static synchronized void contabilizaPalabra(String palabraActual) {
-		Integer numVeces = htConcurrente.get( palabraActual );
-	    if( numVeces != null ) {
-	      htConcurrente.put( palabraActual, numVeces+1 );
-	    } else {
-	      htConcurrente.put( palabraActual, 1 );
-	    }
+		Integer numVeces = hmConcurrente.get( palabraActual );
+  	    if( numVeces != null ) {
+  	      hmConcurrente.put( palabraActual, numVeces+1 );
+  	    } else {
+  	      hmConcurrente.put( palabraActual, 1 );
+  	    }
 	}
 	
 }
+
 
