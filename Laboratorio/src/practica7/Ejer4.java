@@ -2,12 +2,11 @@ package practica7;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 // ============================================================================
-class Ejer2 {
+class Ejer4 {
 // ============================================================================
 
   // -------------------------------------------------------------------------
@@ -16,9 +15,8 @@ class Ejer2 {
     double          tt;
     int             numHebras;
     String          nombreFichero;
-    MayorPrimo      p;
-    ExecutorService exec;
-    
+    MayorPrimo4     p;
+
     // Comprobacion y extraccion de los argumentos de entrada.
     if( args.length != 2 ) {
       System.err.println( "Uso: java programa <numHebras> <nombreFichero>" );
@@ -33,14 +31,12 @@ class Ejer2 {
       System.out.println( "ERROR: Argumentos numericos incorrectos." );
       System.exit( -1 );
     }
-    
-    exec = Executors.newFixedThreadPool(numHebras);
     System.out.println( "Nombre del fichero que procesar: " + nombreFichero );
 
     //
     // Implementacion secuencial sin temporizar.
     //
-    p = new MayorPrimo();
+    p = new MayorPrimo4();
     obtenMayorPrimo_Secuencial( nombreFichero, p );
 
     //
@@ -48,7 +44,7 @@ class Ejer2 {
     //
     System.out.println();
     t1 = System.nanoTime();
-    p = new MayorPrimo();
+    p = new MayorPrimo4();
     obtenMayorPrimo_Secuencial( nombreFichero, p );
     t2 = System.nanoTime();
     tt = ( ( double ) ( t2 - t1 ) ) / 1.0e9;
@@ -56,57 +52,45 @@ class Ejer2 {
     System.out.println( " Tiempo(s): " + tt );
     System.out.println( "  Mayor primo en fichero: " + p.dameMayorPrimo() );
 
-    //
-    // Implementación con ThreadPool
-    //
-    
+    // Implementacion paralela
     System.out.println();
     t1 = System.nanoTime();
-    p = new MayorPrimo();
-    obtenMayorPrimo_ThreadPool(nombreFichero, p, exec);
+
+    BlockingQueue<Tarea4> colaTarea=new ArrayBlockingQueue<Tarea4>(numHebras);
+    p=new MayorPrimo4();
+    Productor productor=new Productor(nombreFichero, colaTarea, numHebras);
+    productor.start();
+    
+    Thread[] vHilos = new Thread[numHebras];
+    
+    for(int i=0;i<numHebras;i++){
+    	vHilos[i] = new Consumidor(colaTarea, p);
+    	vHilos[i].start();
+    }
+    
+    for(int i=0;i<numHebras;i++){
+    	try {
+			vHilos[i].join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+    }
+    
     
     
     t2 = System.nanoTime();
     tt = ( ( double ) ( t2 - t1 ) ) / 1.0e9;
-    System.out.print( "Implementacion con ThreadPool.                           " );
+    System.out.print( "Implementacion con BlockingQueue.                           " );
     System.out.println( " Tiempo(s): " + tt );
     System.out.println( "  Mayor primo en fichero: " + p.dameMayorPrimo() );
-
+    //-------------------------
     System.out.println();
     System.out.println( "Fin de programa." );
-    
   }
-  // -------------------------------------------------------------------------
-  public static void obtenMayorPrimo_ThreadPool(String nombreFichero, MayorPrimo p, 
-		  ExecutorService exec) {
-	  BufferedReader br;
-	  String linea;
-	  
-	  try {
-		  br = new BufferedReader( new FileReader( nombreFichero ) );
-		  while( ( linea = br.readLine() ) != null ) {
-			  exec.execute(new Tarea2(linea, p));
-		  }
-		  br.close();
-	  } catch ( FileNotFoundException ex ) {
-		  ex.printStackTrace();
-	  } catch ( IOException ex ) {
-		  ex.printStackTrace();
-	  }
-	  
-	  exec.shutdown();
-	  
-	  try {
-		while( ! exec.awaitTermination(2L, TimeUnit.MILLISECONDS) ) {
-			  
-		  }
-	} catch (InterruptedException e) {
-		e.printStackTrace();
-	}
-  }
+
   // -------------------------------------------------------------------------
   public static void obtenMayorPrimo_Secuencial( 
-                         String nombreFichero, MayorPrimo p ) {
+                         String nombreFichero, MayorPrimo4 p ) {
     BufferedReader br; 
     String         linea;
 
@@ -124,8 +108,11 @@ class Ejer2 {
     }
   }
 
+ 
+  
+  
   // -------------------------------------------------------------------------
-  public static void procesaLinea( String linea, MayorPrimo p ) {
+  public static void procesaLinea( String linea, MayorPrimo4 p ) {
     String palabras[], palabraActual;
     long   numero;
   
@@ -171,12 +158,12 @@ class Ejer2 {
 
 
 // ============================================================================
- class MayorPrimo2 {
+class MayorPrimo4 {
 // ============================================================================
   long mayorPrimo;
 
   // --------------------------------------------------------------------------
-  public MayorPrimo2() {
+  public MayorPrimo4() {
     mayorPrimo = -1;
   }
 
@@ -194,25 +181,88 @@ class Ejer2 {
 }
 
 //============================================================================
- class Tarea2 implements Runnable {
+class Tarea4 {
 //============================================================================
 	String linea;
-	MayorPrimo p;
-	
+	boolean esVeneno;
 	// -----------------------------------------------------------------------
-	public Tarea2(String linea, MayorPrimo p) {
+	public Tarea4(String linea,boolean esVeneno) {
 		this.linea = linea;
+		this.esVeneno=esVeneno;
+	}	
+}
+
+class Productor extends Thread{
+	String nombreFichero;
+	BlockingQueue<Tarea4> colaTarea;
+	int numHebras;
+	
+	public Productor(String nombreFichero,BlockingQueue<Tarea4> colaTarea, int numHebras){
+		this.nombreFichero=nombreFichero;
+		this.colaTarea=colaTarea;
+		this.numHebras = numHebras;
+		
+	}
+	
+	public void run(){
+		BufferedReader br; 
+		  String  linea;
+
+		  try {
+			  br = new BufferedReader( new FileReader( nombreFichero ) );
+			  while( ( linea = br.readLine() ) != null ) {
+				  Tarea4 t = new Tarea4(linea, false);
+				  try {
+					  colaTarea.put(t);
+				  } catch (InterruptedException e) {
+					  e.printStackTrace();
+				  }
+
+			  }
+			  Tarea4 t = new Tarea4("", true);
+			  try {
+				  for (int i = 0; i < numHebras; i++) {
+					  colaTarea.put(t);
+				  }
+			  } catch (InterruptedException e) {
+				  e.printStackTrace();
+			  }
+
+			  br.close();
+		  } catch( FileNotFoundException ex ) {
+			  ex.printStackTrace();
+		  } catch( IOException ex ) {
+			  ex.printStackTrace();
+		  }
+	}
+}
+
+// ============================================================================================
+class Consumidor extends Thread {
+// ============================================================================================
+	BlockingQueue<Tarea4> colaTareas;
+	MayorPrimo4 p;
+	
+	public Consumidor(BlockingQueue<Tarea4> colaTareas, MayorPrimo4 p) {
+		this.colaTareas = colaTareas;
 		this.p = p;
 	}
-	// ------------------------------------------------------------------------
-	@Override
+	
 	public void run() {
-		// TODO Auto-generated method stub
-		procesaLinea(linea, p);
+		try {
+			Tarea4 t = colaTareas.take();
+			while ( ! t.esVeneno ) {
+				String linea = t.linea;
+				procesaLinea(linea, p);
+				t = colaTareas.take();
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}	
 	}
 	
 	// -------------------------------------------------------------------------
-	private void procesaLinea( String linea, MayorPrimo p ) {
+	private void procesaLinea( String linea, MayorPrimo4 p ) {
 		String palabras[], palabraActual;
 		long   numero;
 
@@ -238,7 +288,7 @@ class Ejer2 {
 			}
 		}
 	}
-	
+
 	// -------------------------------------------------------------------------
 	private boolean esPrimo( long num ) {
 		boolean primo;
